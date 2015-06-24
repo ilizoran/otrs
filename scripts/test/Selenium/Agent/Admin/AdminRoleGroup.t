@@ -31,8 +31,8 @@ $Selenium->RunTest(
             Password => $TestUserLogin,
         );
 
-        my $RoleRandomID  = $Helper->GetRandomID();
-        my $GroupRandomID = $Helper->GetRandomID();
+        my $RoleRandomID  = "Role" . $Helper->GetRandomID();
+        my $GroupRandomID = "Group" . $Helper->GetRandomID();
 
         #add test role
         my $RoleID = $Kernel::OM->Get('Kernel::System::Group')->RoleAdd(
@@ -49,7 +49,6 @@ $Selenium->RunTest(
         );
 
         my $ScriptAlias = $ConfigObject->Get('ScriptAlias');
-
         $Selenium->get("${ScriptAlias}index.pl?Action=AdminRoleGroup");
 
         # check overview AdminRoleGroup
@@ -96,6 +95,7 @@ $Selenium->RunTest(
 
         # check edited test group permissions
         $Selenium->find_element( $RoleRandomID, 'link_text' )->click();
+
         $Self->Is(
             $Selenium->find_element("//input[\@value='$GroupID'][\@name='ro']")->is_selected(),
             1,
@@ -111,7 +111,46 @@ $Selenium->RunTest(
             1,
             "owner permission for group $GroupRandomID is enabled",
         );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$GroupID'][\@name='move_into']")->is_selected(),
+            0,
+            "move_into permission for group $GroupRandomID is disabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$GroupID'][\@name='priority']")->is_selected(),
+            0,
+            "priority permission for group $GroupRandomID is disabled",
+        );
 
+        # test checked and unchecked values while filter by group is used
+        # test filter with "WrongFilterGroup" to uncheck all values
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterGroup");
+        sleep 1;
+
+        # test if no data is matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+
+        # check group relations for role after using filter by group
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$GroupID'][\@name='ro']")->is_selected(),
+            1,
+            "ro permission for group $GroupRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$GroupID'][\@name='note']")->is_selected(),
+            1,
+            "note permission for group $GroupRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$GroupID'][\@name='owner']")->is_selected(),
+            1,
+            "owner permission for group $GroupRandomID is enabled",
+        );
         $Self->Is(
             $Selenium->find_element("//input[\@value='$GroupID'][\@name='move_into']")->is_selected(),
             0,
@@ -135,6 +174,51 @@ $Selenium->RunTest(
 
         # check edited test group permissions
         $Selenium->find_element( $GroupRandomID, 'link_text' )->click();
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='ro']")->is_selected(),
+            1,
+            "ro permission for role $RoleRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='note']")->is_selected(),
+            1,
+            "note permission for role $RoleRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='owner']")->is_selected(),
+            1,
+            "owner permission for role $RoleRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='move_into']")->is_selected(),
+            1,
+            "move_into permission for role $RoleRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='priority']")->is_selected(),
+            1,
+            "priority permission for role $RoleRandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID'][\@name='create']")->is_selected(),
+            1,
+            "create permission for role $RoleRandomID is enabled",
+        );
+
+        # test checked and unchecked values while filter is used for Role
+        # test filter with "WrongFilterRole" to uncheck all values
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterRole");
+        sleep 1;
+
+        # test is no data matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+
+        # check role relations for group after using filter by role
         $Self->Is(
             $Selenium->find_element("//input[\@value='$RoleID'][\@name='ro']")->is_selected(),
             1,
@@ -168,7 +252,7 @@ $Selenium->RunTest(
             "create permission for role $RoleRandomID is enabled",
         );
 
-        # Since there are no tickets that rely on our test group and role, we can remove them again
+        # since there are no tickets that rely on our test group and role, we can remove them again
         # from the DB.
         my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
         if ($GroupID) {
@@ -176,12 +260,10 @@ $Selenium->RunTest(
                 SQL => "DELETE FROM group_role WHERE group_id = $GroupID",
             );
 
-            if ($Success) {
-                $Self->True(
-                    $Success,
-                    "GroupRoleDelete - for $GroupRandomID",
-                );
-            }
+            $Self->True(
+                $Success,
+                "GroupRoleDelete - for $GroupRandomID",
+            );
 
             $Success = $DBObject->Do(
                 SQL => "DELETE FROM groups WHERE id = $GroupID",
@@ -205,9 +287,15 @@ $Selenium->RunTest(
             );
         }
 
-        # Make sure the cache is correct.
-        $Kernel::OM->Get('Kernel::System::Cache')->CleanUp( Type => 'Group' );
-        $Kernel::OM->Get('Kernel::System::Cache')->CleanUp( Type => 'Role' );
+        # make sure the cache is correct.
+        for my $Cache (
+            qw (Group Role)
+            )
+        {
+            $Kernel::OM->Get('Kernel::System::Cache')->CleanUp(
+                Type => $Cache,
+            );
+        }
 
     }
 );

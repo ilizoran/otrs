@@ -85,17 +85,45 @@ $Selenium->RunTest(
 
         # edit test group permission for test agent
         $Selenium->find_element( $RandomID, 'link_text' )->click();
-
         $Selenium->find_element("//input[\@value='$UserID'][\@name='rw']")->click();
         $Selenium->find_element("//input[\@value='$UserID'][\@name='ro']")->click();
         $Selenium->find_element("//input[\@value='$UserID'][\@name='note']")->click();
         $Selenium->find_element("//input[\@value='$UserID'][\@name='owner']")->click();
-
         $Selenium->find_element("//button[\@value='Submit'][\@type='submit']")->click();
 
         # check edited test group permissions
         $Selenium->find_element( $RandomID, 'link_text' )->click();
 
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$UserID'][\@name='move_into']")->is_selected(),
+            1,
+            "move_into permission for group $RandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$UserID'][\@name='create']")->is_selected(),
+            1,
+            "create permission for group $RandomID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$UserID'][\@name='rw']")->is_selected(),
+            0,
+            "rw permission for group $RandomID is disabled",
+        );
+
+        # test checked and unchecked values while filter by user is used
+        # test filter with "WrongFilterGroup" to uncheck all values
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterGroup");
+        sleep 1;
+
+        # test if no data is matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+
+        # check group relations for user after using filter by group
         $Self->Is(
             $Selenium->find_element("//input[\@value='$UserID'][\@name='move_into']")->is_selected(),
             1,
@@ -145,6 +173,39 @@ $Selenium->RunTest(
             "rw permission for group $TestGroupID is disabled",
         );
 
+        # test checked and unchecked values while filter by group is used
+        # test filter with "WrongFilterGroup" to uncheck all values
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterGroup");
+        sleep 1;
+
+        # test if no data is matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+
+        # check user relations for group after using filter by user
+
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$TestGroupID'][\@name='ro']")->is_selected(),
+            1,
+            "ro permission for group $TestGroupID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$TestGroupID'][\@name='note']")->is_selected(),
+            1,
+            "note permission for group $TestGroupID is enabled",
+        );
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$TestGroupID'][\@name='rw']")->is_selected(),
+            0,
+            "rw permission for group $TestGroupID is disabled",
+        );
+
         # Since there are no tickets that rely on our test group, we can remove them again
         # from the DB.
         if ($RandomID) {
@@ -174,7 +235,7 @@ $Selenium->RunTest(
             );
         }
 
-        # Make sure the cache is correct.
+        # make sure the cache is correct.
         $Kernel::OM->Get('Kernel::System::Cache')->CleanUp( Type => 'Group' );
 
     }

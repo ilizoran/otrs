@@ -100,15 +100,59 @@ $Selenium->RunTest(
             "Role $RoleRandomID relation for user $TestUserLogin is enabled",
         );
 
+        # test checked and unchecked values while filter by role is used
+        # test filter with "WrongFilterRole" to uncheck a value
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterRole");
+        sleep 1;
+
+        # test if no data is matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys($TestUserLogin);
+        sleep 1;
+
+        # check role relation for agent after using filter by agent
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$UserID']")->is_selected(),
+            1,
+            "Role $RoleRandomID relation for user $TestUserLogin is enabled",
+        );
+
         # remove test relation
         $Selenium->find_element("//input[\@value='$UserID']")->click();
         $Selenium->find_element("//button[\@value='Submit'][\@type='submit']")->click();
 
         # check if relation is clear
-        $Selenium->find_element( $RoleRandomID, 'link_text' )->click();
+        $Selenium->find_element( $FullUserID, 'link_text' )->click();
 
         $Self->Is(
-            $Selenium->find_element("//input[\@value='$UserID']")->is_selected(),
+            $Selenium->find_element("//input[\@value='$RoleID']")->is_selected(),
+            0,
+            "User $TestUserLogin is not in relation with role $RoleRandomID",
+        );
+
+        # test checked and unchecked values while filter by user is used
+        # test filter with "WrongFilterRole" to uncheck a value
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys("WrongFilterRole");
+        sleep 1;
+
+        # test if no data is matches
+        $Self->True(
+            $Selenium->find_element( ".FilterMessage.Hidden>td", 'css' )->is_displayed(),
+            "'No data matches' is displayed'"
+        );
+        $Selenium->find_element( "#Filter", 'css' )->clear();
+        $Selenium->find_element( "#Filter", 'css' )->send_keys($RoleRandomID);
+        sleep 1;
+
+        # check role relation for agent after using filter by role
+        $Self->Is(
+            $Selenium->find_element("//input[\@value='$RoleID']")->is_selected(),
             0,
             "User $TestUserLogin is not in relation with role $RoleRandomID",
         );
