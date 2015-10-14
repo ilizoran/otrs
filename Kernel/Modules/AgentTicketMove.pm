@@ -1200,8 +1200,7 @@ sub AgentMove {
             OldOwners => {
                 Name   => $LayoutObject->{LanguageObject}->Translate('Previous Owner'),
                 Values => $Self->_GetOldOwners(
-                    QueueID  => $Param{DestQueueID},
-                    AllUsers => $Param{OwnerAll},
+                    QueueID => $Param{DestQueueID},
                 ),
             },
         },
@@ -1586,36 +1585,7 @@ sub _GetOldOwners {
         for my $User ( reverse @OldUserInfo ) {
             next USER if $UserHash{ $User->{UserID} };
 
-            # get preferences
-            my %Preferences = $Kernel::OM->Get('Kernel::System::User')->GetPreferences( UserID => $User->{UserID} );
-
-            # get time object
-            my $TimeObject = $Kernel::OM->Get('Kernel::System::Time');
-
-            my $OutOfOfficeMessage = '';
-
-            # out of office check
-            if ( $Preferences{OutOfOffice} ) {
-                my $Time = $Kernel::OM->Get('Kernel::System::Time')->SystemTime();
-                my $Start
-                    = "$Preferences{OutOfOfficeStartYear}-$Preferences{OutOfOfficeStartMonth}-$Preferences{OutOfOfficeStartDay} 00:00:00";
-                my $TimeStart = $TimeObject->TimeStamp2SystemTime(
-                    String => $Start,
-                );
-                my $End
-                    = "$Preferences{OutOfOfficeEndYear}-$Preferences{OutOfOfficeEndMonth}-$Preferences{OutOfOfficeEndDay} 23:59:59";
-                my $TimeEnd = $TimeObject->TimeStamp2SystemTime(
-                    String => $End,
-                );
-                my $Till = int( ( $TimeEnd - $Time ) / 60 / 60 / 24 );
-                my $TillDate
-                    = "$Preferences{OutOfOfficeEndYear}-$Preferences{OutOfOfficeEndMonth}-$Preferences{OutOfOfficeEndDay}";
-                if ( $TimeStart < $Time && $TimeEnd > $Time ) {
-                    $OutOfOfficeMessage = "*** out of office till $TillDate/$Till d ***";
-                }
-            }
-
-            $UserHash{ $User->{UserID} } = "$Counter: $User->{UserFullname} $OutOfOfficeMessage";
+            $UserHash{ $User->{UserID} } = "$Counter: $User->{UserFullname}" . ( $User->{OutOfOfficeMessage} || '' );
             $Counter++;
         }
     }
