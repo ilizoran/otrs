@@ -1585,7 +1585,7 @@ sub _GetOldOwners {
         for my $User ( reverse @OldUserInfo ) {
             next USER if $UserHash{ $User->{UserID} };
 
-            $UserHash{ $User->{UserID} } = "$Counter: $User->{UserFullname}" . ( $User->{OutOfOfficeMessage} || '' );
+            $UserHash{ $User->{UserID} } = "$Counter: $User->{UserFullname}";
             $Counter++;
         }
     }
