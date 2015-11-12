@@ -135,6 +135,16 @@ $Selenium->RunTest(
             $Element->is_enabled();
         }
 
+        # try adding customer again, expecting server error for duplicated entry, see bug #9731
+        $Selenium->find_element( "#ToCustomer", 'css' )->send_keys($TestCustomer);
+
+        $Selenium->WaitFor( JavaScript => 'return typeof($) === "function" && $("li.ui-menu-item:visible").length' );
+
+        $Selenium->find_element("//*[text()='$AutoCompleteString']")->click();
+
+        # click 'Ok' for modal dialog 'Duplicated entry'
+        $Selenium->find_element("//button[\@id='DialogButton1'][\@type='button']")->click();
+
         # add test text to body
         my $ComposeText = "Selenium Compose Text";
         $Selenium->find_element( "#RichText",       'css' )->send_keys($ComposeText);
@@ -144,8 +154,7 @@ $Selenium->RunTest(
         $Selenium->get("${ScriptAlias}index.pl?Action=AgentTicketHistory;TicketID=$TicketID");
 
         # verify that compose worked as expected
-        my $CustomerEmail = "\"$TestCustomer\@localhost.com\"";
-        my $HistoryText   = "Email sent to $CustomerEmail.";
+        my $HistoryText = "Email sent to \"\"$TestCustomer";
 
         $Self->True(
             index( $Selenium->get_page_source(), $HistoryText ) > -1,
