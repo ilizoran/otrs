@@ -270,7 +270,7 @@ sub FilenameCleanUp {
             if ( $Param{Filename} =~ /^.*(\.(..|...|....))$/ ) {
                 $Ext = $1;
             }
-            $Param{Filename} = substr( $Param{Filename}, 0, 80 ) . $Ext;
+            $Param{Filename} = substr( $Param{Filename}, 0, 70 ) . $Ext;
         }
     }
 
