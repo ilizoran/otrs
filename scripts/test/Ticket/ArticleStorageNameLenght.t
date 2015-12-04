@@ -64,10 +64,10 @@ my @Tests = (
         FileName    => 'abcdefghjkabcdefghjk',
     },
 
-    # attachment with 60 character long Latin FileName
+    # attachment with 75 character long Latin FileName
     {
-        Description => 'Latin 60 characters',
-        FileName    => 'abcdefghjkabcdefghjkabcdefghjkabcdefghjkabcdefghjkabcdefghjk',
+        Description => 'Latin 75 characters',
+        FileName    => 'abcdefghjkabcdefghjkabcdefghjkabcdefghjkabcdefghjkabcdefghjkabcdefghjkabcde',
     },
 
     # attachment with 120 character long Latin FileName
@@ -91,14 +91,14 @@ my @Tests = (
         FileName    => 'шђпчћжђшпчшђпчћжђшпч',
     },
 
-    # attachment with 60 character long Cyrillic FileName
+    # attachment with 75 character long Cyrillic FileName
     {
-        Description => 'Cyrillic 60 characters',
+        Description => 'Cyrillic 75 characters',
         FileName =>
-            'шђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпч',
+            'шђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћжђшпчшђпчћ',
     },
 
-# attachment with 120 character long Cyrillic FileName, approximately limit for Linux file name reaching 255 bytes after encoding Cyrillic letters
+    # attachment with 120 character long Cyrillic FileName, approximately limit for Linux file name reaching 255 bytes after encoding Cyrillic letters
     {
         Description => 'Cyrillic 120 characters',
         FileName =>
@@ -119,7 +119,7 @@ my @Tests = (
         FileName    => '人だけの会員制転職サ人だけの会員制転職サ',
     },
 
-# attachment with 75 character long Japanese FileName, approximately limit for Linux file name reaching 255 bytes after encoding Japanese letters
+    # attachment with 75 character long Japanese FileName, approximately limit for Linux file name reaching 255 bytes after encoding Japanese letters
     {
         Description => 'Japanese 75 characters',
         FileName =>
