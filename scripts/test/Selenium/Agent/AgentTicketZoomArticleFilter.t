@@ -26,11 +26,21 @@ $Selenium->RunTest(
         );
         my $Helper = $Kernel::OM->Get('Kernel::System::UnitTest::Helper');
 
+        # get syconfig object
+        my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
+
         # enable article filter
-        $Kernel::OM->Get('Kernel::System::SysConfig')->ConfigItemUpdate(
+        $SysConfigObject->ConfigItemUpdate(
             Valid => 1,
             Key   => 'Ticket::Frontend::TicketArticleFilter',
             Value => 1,
+        );
+
+        # set 3 max article per page
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'Ticket::Frontend::MaxArticlesPerPage',
+            Value => 3,
         );
 
         # get test data
@@ -50,7 +60,21 @@ $Selenium->RunTest(
                 SenderType  => 'agent',
                 Subject     => 'Third Test Article',
             },
-
+            {
+                ArticleType => 'phone',
+                SenderType  => 'customer',
+                Subject     => 'Fourth Test Article',
+            },
+            {
+                ArticleType => 'email-external',
+                SenderType  => 'system',
+                Subject     => 'Fifth Test Article',
+            },
+            {
+                ArticleType => 'note-internal',
+                SenderType  => 'agent',
+                Subject     => 'Sixth Test Article',
+            }
         );
 
         # create and login test user
@@ -89,29 +113,116 @@ $Selenium->RunTest(
         );
 
         # create test articles
-
-        for(1..5){
-
-            for my $Test ( @Tests ) {
-                my $ArticleID = $TicketObject->ArticleCreate(
-                    TicketID       => $TicketID,
-                    ArticleType    => $Test->{ArticleType},
-                    SenderType     => $Test->{SenderType},
-                    Subject        => $Test->{Subject},
-                    Body           => 'Selenium body article',
-                    Charset        => 'ISO-8859-15',
-                    MimeType       => 'text/plain',
-                    HistoryType    => 'AddNote',
-                    HistoryComment => 'Some free text!',
-                    UserID         => $TestUserID,
-                );
-                $Self->True(
-                    $ArticleID,
-                    "Article $Test->{Subject} - created",
-                );
-            }
+        for my $Test (@Tests) {
+            my $ArticleID = $TicketObject->ArticleCreate(
+                TicketID       => $TicketID,
+                ArticleType    => $Test->{ArticleType},
+                SenderType     => $Test->{SenderType},
+                Subject        => $Test->{Subject},
+                Body           => 'Selenium body article',
+                Charset        => 'ISO-8859-15',
+                MimeType       => 'text/plain',
+                HistoryType    => 'AddNote',
+                HistoryComment => 'Some free text!',
+                UserID         => $TestUserID,
+            );
+            $Self->True(
+                $ArticleID,
+                "Article $Test->{Subject} - created",
+            );
         }
 
+        # get script alias
+        my $ScriptAlias = $Kernel::OM->Get('Kernel::Config')->Get('ScriptAlias');
+
+        # navigate to AgentTicketZoom for test created ticket
+        $Selenium->get("${ScriptAlias}index.pl?Action=AgentTicketZoom;TicketID=$TicketID");
+
+        # click on expand view
+        $Selenium->find_element("//a[contains(\@href, \'ZoomExpand=1')]")->click();
+
+        # verify there are last 3 created articles on first page
+        my @FirstPageArticles = (
+            'Article #4 – Fourth Test Article',
+            'Article #5 – Fifth Test Article',
+            'Article #6 – Sixth Test Article',
+        );
+        for my $FirstPage (@FirstPageArticles) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $FirstPage ) > -1,
+                "$FirstPage found on first page - article filter off",
+            );
+        }
+
+        # verify first 3 articles are not visible, they are on second page
+        my @SecondPageArticles = (
+            'Article #1 – First Test Article',
+            'Article #2 – Second Test Article',
+            'Article #3 – Third Test Article',
+        );
+        for my $SecondPage (@SecondPageArticles) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $SecondPage ) == -1,
+                "$SecondPage not found first on page - article filter off",
+            );
+        }
+
+        # click on second page
+        $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=2')]")->click();
+
+        # verify there are first 3 created articles on second page
+        for my $SecondPage (@SecondPageArticles) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $SecondPage ) > -1,
+                "$SecondPage found on second page - article filter off",
+            );
+        }
+
+        # click on article filter
+        $Selenium->find_element( "#SetArticleFilter", 'css' )->click();
+
+        # get phone ArticleTypeID
+        my $PhoneArticleTypeID = $TicketObject->ArticleTypeLookup(
+            ArticleType => 'phone',
+        );
+
+        # get customer ArticleSenderTypeID
+        my $CustomerSenderTypeID = $TicketObject->ArticleSenderTypeLookup(
+            SenderType => 'customer',
+        );
+
+        # select phone as article type and customer as article sender type for article filter
+        $Selenium->execute_script(
+            "\$('#ArticleTypeFilter').val('$PhoneArticleTypeID').trigger('redraw.InputField').trigger('change');"
+        );
+        $Selenium->execute_script(
+            "\$('#ArticleSenderTypeFilter').val('$CustomerSenderTypeID').trigger('redraw.InputField').trigger('change');"
+        );
+
+        # apply filter
+        $Selenium->find_element("//button[\@id='DialogButton1']")->click();
+
+        # verify we now only have first and fourth article on screen and there numeration is intact
+        my @ArticlesFilterOn = ( 'Article #1 – First Test Article', 'Article #4 – Fourth Test Article' );
+        for my $ArticleFilterOn (@ArticlesFilterOn) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $ArticleFilterOn ) > -1,
+                "$ArticleFilterOn found on page with original numeration - article filter on",
+            );
+        }
+
+        # delete test created ticket
+        my $Success = $Kernel::OM->Get('Kernel::System::Ticket')->TicketDelete(
+            TicketID => $TicketID,
+            UserID   => 1,
+        );
+        $Self->True(
+            $Success,
+            "Ticket with ticket id $TicketID - deleted"
+        );
+
+        # make sure the cache is correct
+        $Kernel::OM->Get('Kernel::System::Cache')->CleanUp( Type => 'Ticket' );
     }
 
 );
