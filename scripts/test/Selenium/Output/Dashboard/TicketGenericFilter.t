@@ -37,25 +37,45 @@ $Selenium->RunTest(
             UserLogin => $TestUserLogin,
         );
 
-        # create test ticket
-        my $CustomerUserID = $Helper->GetRandomID() . '@localhost.com';
-        my $TicketNumber   = $TicketObject->TicketCreateNumber();
-        my $TicketID       = $TicketObject->TicketCreate(
-            TN           => $TicketNumber,
-            Title        => 'Selenium Test Ticket',
-            Queue        => 'Raw',
-            Lock         => 'unlock',
-            Priority     => '3 normal',
-            State        => 'new',
-            CustomerID   => '12345',
-            CustomerUser => $CustomerUserID,
-            OwnerID      => $TestUserID,
-            UserID       => $TestUserID,
+        my @Tests = (
+            {
+                TN           => $TicketObject->TicketCreateNumber(),
+                CustomerUser => $Helper->GetRandomID() . '@first.com',
+            },
+            {
+                TN           => $TicketObject->TicketCreateNumber(),
+                CustomerUser => $Helper->GetRandomID() . '@second.com',
+            }
         );
-        $Self->True(
-            $TicketID,
-            "Ticket ID $TicketID - created"
-        );
+
+        # create test tickets
+        my @Tickets;
+        for my $Test (@Tests) {
+            my $TicketID = $TicketObject->TicketCreate(
+                TN           => $Test->{TN},
+                Title        => 'Selenium Test Ticket',
+                Queue        => 'Raw',
+                Lock         => 'unlock',
+                Priority     => '3 normal',
+                State        => 'new',
+                CustomerID   => 'SomeCustomer',
+                CustomerUser => $Test->{CustomerUser},
+                OwnerID      => $TestUserID,
+                UserID       => $TestUserID,
+            );
+            $Self->True(
+                $TicketID,
+                "Ticket ID $TicketID - created"
+            );
+
+            push @Tickets, {
+                TicketID     => $TicketID,
+                TN           => $Test->{TN},
+                CustomerUser => $Test->{CustomerUser}
+            };
+        }
+
+        $Kernel::OM->Get('Kernel::System::Log')->Dumper( 'Debug - @Tickets', \@Tickets );
 
         # login test user
         $Selenium->Login(
@@ -68,57 +88,118 @@ $Selenium->RunTest(
         my $ScriptAlias = $Kernel::OM->Get('Kernel::Config')->Get('ScriptAlias');
 
         # navigate to SysConfig screen
-        $Selenium->get("${ScriptAlias}index.pl?Action=AdminSysConfig");
+        $Selenium->VerifiedGet("${ScriptAlias}index.pl?Action=AdminSysConfig");
 
         # search for 0120-TicketNew SysConfig
         $Selenium->find_element("//input[\@id='SysConfigSearch'][\@title='Search']")->send_keys('0120-TicketNew');
-        $Selenium->find_element("//button[\@value='Search'][\@type='submit']")->click();
+        $Selenium->find_element("//button[\@value='Search'][\@type='submit']")->VerifiedClick();
 
         # click on found SysConfig
-        $Selenium->find_element("//a[contains(\@href, \'Action=AdminSysConfig;Subaction=Edit' )]")->click();
+        $Selenium->find_element("//a[contains(\@href, \'Action=AdminSysConfig;Subaction=Edit' )]")->VerifiedClick();
 
-        # find CustomerUserID for TicketNew dashboard SysConfig and set it as default column
+        # find 'CustomerUserID' for TicketNew dashboard SysConfig and set it as default column
         $Selenium->find_element(
             "//input[\@name='DashboardBackend###0120-TicketNew##SubHash##DefaultColumnsKey[]'][\@title='CustomerUserID']"
         )->send_keys( "\N{U+E004}", '2' );
 
         # submit SysConfig
-        $Selenium->find_element("//button[\@class='CallForAction'][\@value='Update']")->click();
+        $Selenium->find_element("//button[\@class='CallForAction'][\@value='Update']")->VerifiedClick();
 
         # navigate to dashboard screen
-        $Selenium->get("${ScriptAlias}index.pl?");
+        $Selenium->VerifiedGet("${ScriptAlias}index.pl?");
 
-        # click on column setting filter for CustomerUserID in TicketNew generic dashboard overview
-        $Selenium->find_element("//a[contains(\@title, \'CustomerUserID\' )]")->click();
+        # check if 'CustomerUserID' filter for TicketNew dashboard is set
+        eval {
+            $Self->True(
+                $Selenium->find_element("//a[contains(\@title, \'CustomerUserID\' )]"),
+                "'CustomerUserID' filter for TicketNew dashboard is set",
+            );
+        };
+        if ($@) {
+            $Self->True(
+                $@,
+                "'CustomerUserID' filter for TicketNew dashboard is not set",
+            );
+        }
+        else {
 
-        # select test CustomerUserID as filter for TicketNew generic dashboard overview
-        my $ParentElement = $Selenium->find_element( "div.ColumnSettingsBox", 'css' );
-        $Selenium->find_child_element( $ParentElement, "./input" )->send_keys($CustomerUserID);
-        $Selenium->execute_script(
-            "\$('#ColumnFilterCustomerUserID0120-TicketNew').val('$CustomerUserID').trigger('redraw.InputField').trigger('change');"
-        );
+            # click on column setting filter for the first customer in TicketNew generic dashboard overview
+            $Selenium->find_element("//a[contains(\@title, \'CustomerUserID\' )]")->click();
 
-        # verify we found test ticket by filtering with customer that is not in DB, see bug #10117
-        $Self->True(
-            index( $Selenium->get_page_source(), $TicketNumber ) > -1,
-            "Test ticket ID $TicketID with TN $TicketNumber - found on screen after filtering with unknown customer",
-        );
+            # select the first test CustomerUserID as filter for TicketNew generic dashboard overview
+            my $ParentElement = $Selenium->find_element( "div.ColumnSettingsBox", 'css' );
+            $Selenium->find_child_element( $ParentElement, "./input" )->send_keys( $Tickets[0]->{CustomerUser} );
+            $Selenium->execute_script(
+                "\$('#ColumnFilterCustomerUserID0120-TicketNew').val('$Tickets[0]->{CustomerUser}').trigger('redraw.InputField').trigger('change');"
+            );
 
-        # delete test ticket
-        my $Success = $TicketObject->TicketDelete(
-            TicketID => $TicketID,
-            UserID   => 1,
-        );
-        $Self->True(
-            $Success,
-            "Ticket ID $TicketID - deleted"
-        );
+            # wait for auto-complete action
+            $Selenium->WaitFor(
+                JavaScript =>
+                    'return typeof($) === "function" && $("a[href*=\'TicketID='
+                    . $Tickets[0]->{TicketID}
+                    . '\']").length'
+            );
+
+            # verify the first test ticket is found  by filtering with the second customer that is not in DB
+            $Self->True(
+                index( $Selenium->get_page_source(), $Tickets[0]->{TN} ) > -1,
+                "Test ticket with TN $Tickets[0]->{TN} - found on screen after filtering with customer - $Tickets[0]->{CustomerUser}",
+            );
+
+            # verify the second test ticket is not found by filtering with the first customer that is not in DB
+            $Self->True(
+                index( $Selenium->get_page_source(), $Tickets[1]->{TN} ) == -1,
+                "Test ticket with TN $Tickets[1]->{TN} - not found on screen after filtering with customer - $Tickets[0]->{CustomerUser}",
+            );
+
+            # click on column setting filter for CustomerUserID in TicketNew generic dashboard overview
+            $Selenium->find_element("//a[contains(\@title, \'CustomerUserID\' )]")->click();
+
+            # select test CustomerUserID as filter for TicketNew generic dashboard overview
+            $ParentElement = $Selenium->find_element( "div.ColumnSettingsBox", 'css' );
+            $Selenium->find_child_element( $ParentElement, "./input" )->send_keys( $Tickets[1]->{CustomerUser} );
+            $Selenium->execute_script(
+                "\$('#ColumnFilterCustomerUserID0120-TicketNew').val('$Tickets[1]->{CustomerUser}').trigger('redraw.InputField').trigger('change');"
+            );
+
+            # wait for auto-complete action
+            $Selenium->WaitFor(
+                JavaScript =>
+                    'return typeof($) === "function" && $("a[href*=\'TicketID='
+                    . $Tickets[1]->{TicketID}
+                    . '\']").length'
+            );
+
+            # verify the second test ticket is found by filtering with the second customer that is not in DB
+            $Self->True(
+                index( $Selenium->get_page_source(), $Tickets[1]->{TN} ) > -1,
+                "Test ticket TN $Tickets[1]->{TN} - found on screen after filtering with the customer - $Tickets[1]->{CustomerUser}",
+            );
+
+            # verify the first test ticket is not found by filtering with the second customer that is not in DB
+            $Self->True(
+                index( $Selenium->get_page_source(), $Tickets[0]->{TN} ) == -1,
+                "Test ticket TN $Tickets[0]->{TN} - not found on screen after filtering with customer - $Tickets[1]->{CustomerUser}",
+            );
+        }
+
+        # delete test tickets
+        for my $Ticket (@Tickets) {
+            my $Success = $TicketObject->TicketDelete(
+                TicketID => $Ticket->{TicketID},
+                UserID   => 1,
+            );
+            $Self->True(
+                $Success,
+                "Ticket ID $Ticket->{TicketID} - deleted"
+            );
+        }
 
         # make sure cache is correct
         $Kernel::OM->Get('Kernel::System::Cache')->CleanUp(
             Type => 'Ticket',
         );
-
     }
 );
 
