@@ -776,6 +776,14 @@ sub MaskAgentZoom {
         $Pages = ceil( $ArticleCount / $Limit );
     }
 
+    my $Count;
+    if ( $ConfigObject->Get('Ticket::Frontend::ZoomExpandSort') eq 'reverse' ) {
+        $Count = scalar @ArticleBox + 1;
+    }
+    else {
+        $Count = 0;
+    }
+
     # get all articles
     my @ArticleContentArgsAll = (
         TicketID                   => $Self->{TicketID},
@@ -784,32 +792,42 @@ sub MaskAgentZoom {
         Order                      => $Order,
         DynamicFields => 0,    # fetch later only for the article(s) to display
     );
-    my @ArticleBoxAll = $TicketObject->ArticleContentIndex( @ArticleContentArgsAll );
+    my @ArticleBoxAll = $TicketObject->ArticleContentIndex(@ArticleContentArgsAll);
 
-    my $Count;
-    if ( $ConfigObject->Get('Ticket::Frontend::ZoomExpandSort') eq 'reverse' ) {
-        $Count = scalar @ArticleBoxAll + 1;
-    }
-    else {
-        $Count = 0;
-    }
+    if ( scalar @ArticleBox != scalar @ArticleBoxAll ) {
 
-    for my $Article (@ArticleBoxAll) {
         if ( $ConfigObject->Get('Ticket::Frontend::ZoomExpandSort') eq 'reverse' ) {
-            $Count--;
+            $Count = scalar @ArticleBoxAll + 1;
         }
-        else {
-            $Count++;
+
+        for my $Article (@ArticleBoxAll) {
+            if ( $ConfigObject->Get('Ticket::Frontend::ZoomExpandSort') eq 'reverse' ) {
+                $Count--;
+            }
+            else {
+                $Count++;
+            }
+            $Article->{Count} = $Count;
         }
-        $Article->{Count} = $Count;
     }
 
     my $ArticleIDFound = 0;
     ARTICLE:
     for my $Article (@ArticleBox) {
 
-        my @ArticleOnPage = grep { $_->{ArticleID} =~ $Article->{ArticleID} } @ArticleBoxAll;
-        $Article->{Count} = $ArticleOnPage[0]->{Count};
+        if ( scalar @ArticleBox != scalar @ArticleBoxAll ) {
+            my @ArticleOnPage = grep { $_->{ArticleID} =~ $Article->{ArticleID} } @ArticleBoxAll;
+            $Article->{Count} = $ArticleOnPage[0]->{Count};
+        }
+        else {
+            if ( $ConfigObject->Get('Ticket::Frontend::ZoomExpandSort') eq 'reverse' ) {
+                $Count--;
+            }
+            else {
+                $Count++;
+            }
+            $Article->{Count} = $Count;
+        }
 
         next ARTICLE if !$Self->{ArticleID};
         next ARTICLE if !$Article->{ArticleID};

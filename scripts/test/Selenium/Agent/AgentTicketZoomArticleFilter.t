@@ -36,6 +36,13 @@ $Selenium->RunTest(
             Value => 1,
         );
 
+        # set ZoomExpandSort to reverse
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'Ticket::Frontend::ZoomExpandSort',
+            Value => 'reverse',
+        );
+
         # set 3 max article per page
         $SysConfigObject->ConfigItemUpdate(
             Valid => 1,
@@ -136,45 +143,45 @@ $Selenium->RunTest(
         my $ScriptAlias = $Kernel::OM->Get('Kernel::Config')->Get('ScriptAlias');
 
         # navigate to AgentTicketZoom for test created ticket
-        $Selenium->get("${ScriptAlias}index.pl?Action=AgentTicketZoom;TicketID=$TicketID");
+        $Selenium->VerifiedGet("${ScriptAlias}index.pl?Action=AgentTicketZoom;TicketID=$TicketID");
 
         # click on expand view
-        $Selenium->find_element("//a[contains(\@href, \'ZoomExpand=1')]")->click();
+        $Selenium->find_element("//a[contains(\@href, \'ZoomExpand=1')]")->VerifiedClick();
 
         # verify there are last 3 created articles on first page
-        my @FirstPageArticles = (
+        my @FirstArticles = (
             'Article #4 – Fourth Test Article',
             'Article #5 – Fifth Test Article',
             'Article #6 – Sixth Test Article',
         );
-        for my $FirstPage (@FirstPageArticles) {
+        for my $Article (@FirstArticles) {
             $Self->True(
-                index( $Selenium->get_page_source(), $FirstPage ) > -1,
-                "$FirstPage found on first page - article filter off",
+                index( $Selenium->get_page_source(), $Article ) > -1,
+                "ZoomExpandSort: reverse - $Article found on first page - article filter off",
             );
         }
 
         # verify first 3 articles are not visible, they are on second page
-        my @SecondPageArticles = (
+        my @SecondArticles = (
             'Article #1 – First Test Article',
             'Article #2 – Second Test Article',
             'Article #3 – Third Test Article',
         );
-        for my $SecondPage (@SecondPageArticles) {
+        for my $Article (@SecondArticles) {
             $Self->True(
-                index( $Selenium->get_page_source(), $SecondPage ) == -1,
-                "$SecondPage not found first on page - article filter off",
+                index( $Selenium->get_page_source(), $Article ) == -1,
+                "ZoomExpandSort: reverse - $Article not found first on page - article filter off",
             );
         }
 
         # click on second page
-        $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=2')]")->click();
+        $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=2')]")->VerifiedClick();
 
         # verify there are first 3 created articles on second page
-        for my $SecondPage (@SecondPageArticles) {
+        for my $Article (@SecondArticles) {
             $Self->True(
-                index( $Selenium->get_page_source(), $SecondPage ) > -1,
-                "$SecondPage found on second page - article filter off",
+                index( $Selenium->get_page_source(), $Article ) > -1,
+                "ZoomExpandSort: reverse - $Article found on second page - article filter off",
             );
         }
 
@@ -200,14 +207,42 @@ $Selenium->RunTest(
         );
 
         # apply filter
-        $Selenium->find_element("//button[\@id='DialogButton1']")->click();
+        $Selenium->find_element("//button[\@id='DialogButton1']")->VerifiedClick();
 
         # verify we now only have first and fourth article on screen and there numeration is intact
         my @ArticlesFilterOn = ( 'Article #1 – First Test Article', 'Article #4 – Fourth Test Article' );
         for my $ArticleFilterOn (@ArticlesFilterOn) {
             $Self->True(
                 index( $Selenium->get_page_source(), $ArticleFilterOn ) > -1,
-                "$ArticleFilterOn found on page with original numeration - article filter on",
+                "ZoomExpandSort: reverse - $ArticleFilterOn found on page with original numeration - article filter on",
+            );
+        }
+
+        # set ZoomExpandSort to normal
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'Ticket::Frontend::ZoomExpandSort',
+            Value => 'normal',
+        );
+
+        # reset filter
+        $Selenium->find_element( "#ResetArticleFilter", 'css' )->click();
+
+        # click on first page
+        $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=1')]")->VerifiedClick();
+        for my $Article (@SecondArticles) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $Article ) > -1,
+                "ZoomExpandSort: normal - $Article found on first page - article filter off",
+            );
+        }
+
+        # click on second page
+        $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=2')]")->VerifiedClick();
+        for my $Article (@FirstArticles) {
+            $Self->True(
+                index( $Selenium->get_page_source(), $Article ) > -1,
+                "ZoomExpandSort: normal - $Article found on second page - article filter off",
             );
         }
 
