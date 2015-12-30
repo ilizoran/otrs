@@ -185,7 +185,7 @@ $Selenium->RunTest(
             );
         }
 
-        # click on article filter
+        # click on article filter, open popup dialog
         $Selenium->find_element( "#SetArticleFilter", 'css' )->click();
 
         # get phone ArticleTypeID
@@ -226,7 +226,7 @@ $Selenium->RunTest(
         );
 
         # reset filter
-        $Selenium->find_element( "#ResetArticleFilter", 'css' )->click();
+        $Selenium->find_element( "#ResetArticleFilter", 'css' )->VerifiedClick();
 
         # click on first page
         $Selenium->find_element("//a[contains(\@href, \'TicketID=$TicketID;ArticlePage=1')]")->VerifiedClick();
