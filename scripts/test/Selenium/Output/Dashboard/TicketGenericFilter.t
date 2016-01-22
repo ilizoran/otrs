@@ -1,5 +1,5 @@
 # --
-# Copyright (C) 2001-2015 OTRS AG, http://otrs.com/
+# Copyright (C) 2001-2016 OTRS AG, http://otrs.com/
 # --
 # This software comes with ABSOLUTELY NO WARRANTY. For details, see
 # the enclosed file COPYING for license information (AGPL). If you
@@ -75,8 +75,6 @@ $Selenium->RunTest(
             };
         }
 
-        $Kernel::OM->Get('Kernel::System::Log')->Dumper( 'Debug - @Tickets', \@Tickets );
-
         # login test user
         $Selenium->Login(
             Type     => 'Agent',
@@ -100,7 +98,10 @@ $Selenium->RunTest(
         # find 'CustomerUserID' for TicketNew dashboard SysConfig and set it as default column
         $Selenium->find_element(
             "//input[\@name='DashboardBackend###0120-TicketNew##SubHash##DefaultColumnsKey[]'][\@title='CustomerUserID']"
-        )->send_keys( "\N{U+E004}", '2' );
+        )->send_keys("\N{U+E004}");
+        my $ActiveElement = $Selenium->get_active_element();
+        $ActiveElement->clear();
+        $ActiveElement->send_keys('2');
 
         # submit SysConfig
         $Selenium->find_element("//button[\@class='CallForAction'][\@value='Update']")->VerifiedClick();
