@@ -1524,6 +1524,17 @@ sub _Replace {
     return $Param{Text};
 }
 
+=item _RemoveUnSupportedTag()
+
+cleanup all not supported tags
+
+    my $Text = $TemplateGeneratorObject->_RemoveUnSupportedTag(
+        Text => $SomeTextWithTags,
+        ListOfUnSupportedTag => \@ListOfUnSupportedTag,
+    );
+
+=cut
+
 sub _RemoveUnSupportedTag {
 
     my ( $Self, %Param ) = @_;
