@@ -133,10 +133,18 @@ sub Salutation {
         );
     }
 
+    # get list unsupported tags for standard template
+    my @ListOfUnSupportedTag = qw/OTRS_AGENT_SUBJECT OTRS_AGENT_BODY OTRS_CUSTOMER_BODY OTRS_CUSTOMER_SUBJECT/;
+
+    my $SalutationText = $Self->_RemoveUnSupportedTag(
+        Text => $Salutation{Text} || '',
+        ListOfUnSupportedTag => \@ListOfUnSupportedTag,
+    );
+
     # replace place holder stuff
-    my $SalutationText = $Self->_Replace(
+    $SalutationText = $Self->_Replace(
         RichText => $Self->{RichText},
-        Text     => $Salutation{Text},
+        Text     => $SalutationText,
         TicketID => $Param{TicketID},
         Data     => $Param{Data},
         UserID   => $Param{UserID},
@@ -244,10 +252,18 @@ sub Signature {
         );
     }
 
+    # get list unsupported tags for standard template
+    my @ListOfUnSupportedTag = qw/OTRS_AGENT_SUBJECT OTRS_AGENT_BODY OTRS_CUSTOMER_BODY OTRS_CUSTOMER_SUBJECT/;
+
+    my $SignatureText = $Self->_RemoveUnSupportedTag(
+        Text => $Signature{Text} || '',
+        ListOfUnSupportedTag => \@ListOfUnSupportedTag,
+    );
+
     # replace place holder stuff
-    my $SignatureText = $Self->_Replace(
+    $SignatureText = $Self->_Replace(
         RichText => $Self->{RichText},
-        Text     => $Signature{Text},
+        Text     => $SignatureText,
         TicketID => $Param{TicketID} || '',
         Data     => $Param{Data},
         QueueID  => $Param{QueueID},
@@ -412,10 +428,18 @@ sub Template {
         );
     }
 
+    # get list unsupported tags for standard template
+    my @ListOfUnSupportedTag = qw/OTRS_AGENT_SUBJECT OTRS_AGENT_BODY OTRS_CUSTOMER_BODY OTRS_CUSTOMER_SUBJECT/;
+
+    my $TemplateText = $Self->_RemoveUnSupportedTag(
+        Text => $Template{Template} || '',
+        ListOfUnSupportedTag => \@ListOfUnSupportedTag,
+    );
+
     # replace place holder stuff
-    my $TemplateText = $Self->_Replace(
+    $TemplateText = $Self->_Replace(
         RichText => $Self->{RichText},
-        Text     => $Template{Template} || '',
+        Text     => $TemplateText || '',
         TicketID => $Param{TicketID} || '',
         Data     => $Param{Data} || {},
         UserID   => $Param{UserID},
@@ -1498,6 +1522,37 @@ sub _Replace {
     $Param{Text} =~ s/$Tag.+?$End/-/gi;
 
     return $Param{Text};
+}
+
+sub _RemoveUnSupportedTag {
+
+    my ( $Self, %Param ) = @_;
+
+    # check needed stuff
+    for (qw(Text ListOfUnSupportedTag)) {
+        if ( !defined $Param{$_} ) {
+            $Kernel::OM->Get('Kernel::System::Log')->Log(
+                Priority => 'error',
+                Message  => "Need $_!"
+            );
+            return;
+        }
+    }
+
+    my $Start = '<';
+    my $End   = '>';
+    if ( $Self->{RichText} ) {
+        $Start = '&lt;';
+        $End   = '&gt;';
+        $Param{Text} =~ s/(\n|\r)//g;
+    }
+
+    # cleanup all not supported tags
+    my $NotSupportedTag = $Start . "(?:" . join( "|", @{ $Param{ListOfUnSupportedTag} } ) . ")" . $End;
+    $Param{Text} =~ s/$NotSupportedTag/-/gi;
+
+    return $Param{Text};
+
 }
 
 1;
