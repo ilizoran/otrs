@@ -19,7 +19,7 @@ my $SalutationObject = $Kernel::OM->Get('Kernel::System::Salutation');
 
 # add salutation
 my $SalutationNameRand0 = 'example-salutation' . int rand 1000000;
-my $Salutation          = "Dear <OTRS_CUSTOMER_Realname>,
+my $Salutation          = "Dear <OTRS_CUSTOMER_REALNAME>,
 
 Thank you for your request. Your email address in our database
 is \"<OTRS_CUSTOMER_DATA_UserEmail>\".
