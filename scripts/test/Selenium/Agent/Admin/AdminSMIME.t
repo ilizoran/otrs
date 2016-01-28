@@ -42,6 +42,31 @@ $Selenium->RunTest(
         my $SysConfigObject = $Kernel::OM->Get('Kernel::System::SysConfig');
         my $ConfigObject    = $Kernel::OM->Get('Kernel::Config');
 
+        # create directory for certificates and private keys
+        my $CertPath    = $ConfigObject->Get('Home') . "/var/tmp/certs";
+        my $PrivatePath = $ConfigObject->Get('Home') . "/var/tmp/private";
+        mkpath( [$CertPath],    0, 0770 );    ## no critic
+        mkpath( [$PrivatePath], 0, 0770 );    ## no critic
+
+        # get script alias
+        my $ScriptAlias = $ConfigObject->Get('ScriptAlias');
+
+        # disabled SMIME in config
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'SMIME',
+            Value => 0
+        );
+
+        # navigate to AdminSMIME screen
+        $Selenium->VerifiedGet("${ScriptAlias}index.pl?Action=AdminSMIME");
+
+        # check widget sidebar when SMIME sysconfig is disabled
+        $Self->True(
+            $Selenium->find_element("//button[\@value='Enable it here!']"),
+            "Widget sidebar with button 'Enable it here!' to the SMIME sysConfig is displayed.",
+        );
+
         # enable SMIME in config
         $SysConfigObject->ConfigItemUpdate(
             Valid => 1,
@@ -49,11 +74,26 @@ $Selenium->RunTest(
             Value => 1
         );
 
-        # create directory for certificates and private keys
-        my $CertPath    = $ConfigObject->Get('Home') . "/var/tmp/certs";
-        my $PrivatePath = $ConfigObject->Get('Home') . "/var/tmp/private";
-        mkpath( [$CertPath],    0, 0770 );    ## no critic
-        mkpath( [$PrivatePath], 0, 0770 );    ## no critic
+        # set SMIME paths in sysConfig
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'SMIME::CertPath',
+            Value => '/SomeCertPath',
+        );
+        $SysConfigObject->ConfigItemUpdate(
+            Valid => 1,
+            Key   => 'SMIME::PrivatePath',
+            Value => '/SomePrivatePath',
+        );
+
+        # refresh AdminSMIME screen
+        $Selenium->VerifiedRefresh();
+
+        # check widget sidebar when SMIME sysconfig does not work
+        $Self->True(
+            $Selenium->find_element("//button[\@value='Configure it here!']"),
+            "Widget sidebar with button 'Configure it here!' to the SMIME sysConfig is displayed.",
+        );
 
         # set SMIME paths in sysConfig
         $SysConfigObject->ConfigItemUpdate(
@@ -67,11 +107,8 @@ $Selenium->RunTest(
             Value => $PrivatePath,
         );
 
-        # get script alias
-        my $ScriptAlias = $ConfigObject->Get('ScriptAlias');
-
-        # navigate to AdminSMIME screen
-        $Selenium->VerifiedGet("${ScriptAlias}index.pl?Action=AdminSMIME");
+        # refresh AdminSMIME screen
+        $Selenium->VerifiedRefresh();
 
         # check overview screen
         $Selenium->find_element( "table",             'css' );
