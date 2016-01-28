@@ -63,8 +63,12 @@ $Selenium->RunTest(
 
         # check widget sidebar when SMIME sysconfig is disabled
         $Self->True(
+            $Selenium->find_element('h3 span.Warning', 'css'),
+            "Widget sidebar with warning message is displayed.",
+        );
+        $Self->True(
             $Selenium->find_element("//button[\@value='Enable it here!']"),
-            "Widget sidebar with button 'Enable it here!' to the SMIME sysConfig is displayed.",
+            "Button 'Enable it here!' to the SMIME SysConfig is displayed.",
         );
 
         # enable SMIME in config
@@ -91,8 +95,12 @@ $Selenium->RunTest(
 
         # check widget sidebar when SMIME sysconfig does not work
         $Self->True(
+            $Selenium->find_element('h3 span.Error', 'css'),
+            "Widget sidebar with error message is displayed.",
+        );
+        $Self->True(
             $Selenium->find_element("//button[\@value='Configure it here!']"),
-            "Widget sidebar with button 'Configure it here!' to the SMIME sysConfig is displayed.",
+            "Button 'Configure it here!' to the SMIME SysConfig is displayed.",
         );
 
         # set SMIME paths in sysConfig
