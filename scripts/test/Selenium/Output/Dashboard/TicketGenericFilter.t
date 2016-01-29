@@ -137,8 +137,8 @@ $Selenium->RunTest(
             # wait for auto-complete action
             $Selenium->WaitFor(
                 JavaScript =>
-                    'return typeof($) === "function" && $("a[href*=\'TicketID='
-                    . $Tickets[0]->{TicketID}
+                    'return typeof($) === "function" && !$("a[href*=\'TicketID='
+                    . $Tickets[1]->{TicketID}
                     . '\']").length'
             );
 
@@ -167,8 +167,8 @@ $Selenium->RunTest(
             # wait for auto-complete action
             $Selenium->WaitFor(
                 JavaScript =>
-                    'return typeof($) === "function" && $("a[href*=\'TicketID='
-                    . $Tickets[1]->{TicketID}
+                    'return typeof($) === "function" && !$("a[href*=\'TicketID='
+                    . $Tickets[0]->{TicketID}
                     . '\']").length'
             );
 
