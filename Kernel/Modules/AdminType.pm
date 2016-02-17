@@ -33,6 +33,20 @@ sub Run {
     my $TypeObject   = $Kernel::OM->Get('Kernel::System::Type');
 
     # ------------------------------------------------------------ #
+    # delete action
+    # ------------------------------------------------------------ #
+    if ( $Self->{Subaction} eq 'Delete' ) {
+        my $ID = $ParamObject->GetParam( Param => 'ID' ) || '';
+        my $Delete = $TypeObject->TypeDelete( ID => $ID );
+
+        if ( !$Delete ) {
+            return $LayoutObject->ErrorScreen();
+        }
+
+        return $LayoutObject->Redirect( OP => "Action=$Self->{Action}" );
+    }
+
+    # ------------------------------------------------------------ #
     # change
     # ------------------------------------------------------------ #
     if ( $Self->{Subaction} eq 'Change' ) {
@@ -288,6 +302,10 @@ sub _Edit {
     # shows header
     if ( $Param{Action} eq 'Change' ) {
         $LayoutObject->Block( Name => 'HeaderEdit' );
+        $LayoutObject->Block(
+            Name => 'ActionDeleteType',
+            Data => \%Param,
+        );
     }
     else {
         $LayoutObject->Block( Name => 'HeaderAdd' );
