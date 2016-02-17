@@ -1,3 +1,7 @@
+#7.0.1
+
+- testing
+
 #6.0.0.beta1 2016-??-??
  - 2016-02-16 Added possibility to create non-singleton objects to the ObjectManager via Create().
  - 2016-02-16 Add support for JSON pretty print, thanks to Renée Bäcker.
