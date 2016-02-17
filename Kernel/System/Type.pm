@@ -57,6 +57,38 @@ sub new {
     return $Self;
 }
 
+=item TypeDelete()
+
+delete a new ticket type
+
+    my $ID = $TypeObject->TypeDelete(
+        Name    => 'New Type',
+        ValidID => 1,
+        UserID  => 123,
+    );
+
+=cut
+
+sub TypeDelete {
+    my ( $Self, %Param ) = @_;
+
+    # get database object
+    my $DBObject = $Kernel::OM->Get('Kernel::System::DB');
+
+    # ask the database
+    $DBObject->Prepare(
+        SQL  => 'DELETE FROM ticket_type WHERE id = ?',
+        Bind => [ \$Param{ID} ],
+    );
+
+    # reset cache
+    $Kernel::OM->Get('Kernel::System::Cache')->CleanUp(
+        Type => $Self->{CacheType},
+    );
+
+    return 1;
+}
+
 =item TypeAdd()
 
 add a new ticket type
