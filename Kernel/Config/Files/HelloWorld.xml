@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<otrs_config version="1.0" init="Application">
+        <ConfigItem Name="Frontend::Module###AgentHelloWorld" Required="1" Valid="1">
+        <Description Translatable="1">FrontendModuleRegistration for HelloWorld module.</Description>
+        <Group>HelloWorld</Group>
+        <SubGroup>Frontend::Agent::ModuleRegistration</SubGroup>
+        <Setting>
+            <FrontendModuleReg>
+                <Title>HelloWorld</Title>
+                <Group>users</Group>
+                <Description>HelloWorld</Description>
+                <NavBarName>HelloWorld</NavBarName>
+                <NavBar>
+                    <Description>HelloWorld</Description>
+                    <Name>HelloWorld</Name>
+                    <Link>Action=AgentHelloWorld</Link>
+                    <NavBar>HelloWorld</NavBar>
+                    <Type>Menu</Type>
+                    <Prio>8400</Prio>
+                    <Block>ItemArea</Block>
+                </NavBar>
+            </FrontendModuleReg>
+        </Setting>
+    </ConfigItem>
+</otrs_config>
